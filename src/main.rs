@@ -58,11 +58,13 @@ async fn main() -> Result<()> {
     let start = Instant::now();
     let mut handles = Vec::new();
     for site in sites {
-        //handles.push(tokio::task::spawn(|| async move {
+        //handles.push(thread::spawn(|| async move {
         handles.push(tokio::task::spawn(async {
             if let Ok(url) = site {
                 process_site(&url).await?;
             }
+            // Error is "cannot infer type for type parameter `E`
+            // declared on the enum `Result`.
             Ok(())
         }));
     }

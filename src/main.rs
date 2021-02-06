@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 //use std::thread;
 use std::time::Instant;
+use tokio::task::JoinHandle;
 
 // We need to set the user agent because some sites return 403 Forbidden
 // for requests that do not seem to be coming from a web browser.
@@ -17,16 +18,16 @@ const UA: &str = "Mozilla/5.0"; // This is enough.
 type FileLines = Lines<BufReader<File>>;
 
 type GenericError = Box<dyn std::error::Error + Send + Sync>;
-type Result<T> = std::result::Result<T, GenericError>;
+type MyResult<T> = std::result::Result<T, GenericError>;
 
-async fn get_sites() -> Result<FileLines> {
+async fn get_sites() -> MyResult<FileLines> {
     let path = "./web-sites.txt";
     let f = File::open(path)?;
     let reader = BufReader::new(f);
     Ok(reader.lines())
 }
 
-async fn process_site(url: &str) -> Result<()> {
+async fn process_site(url: &str) -> MyResult<()> {
     // If commented ...
     if url.starts_with("#") {
         return Ok(());
@@ -42,7 +43,7 @@ async fn process_site(url: &str) -> Result<()> {
 }
 
 #[tokio::main] // starts the Tokio runtime
-async fn main() -> Result<()> {
+async fn main() -> MyResult<()> {
     // Single threaded ...
     let sites = get_sites().await?;
     let start = Instant::now();
@@ -56,17 +57,14 @@ async fn main() -> Result<()> {
     // Multi-threaded ...
     let sites = get_sites().await?;
     let start = Instant::now();
-    let mut handles = Vec::new();
+    let mut handles: Vec<JoinHandle<MyResult<()>>> = Vec::new();
     for site in sites {
         //handles.push(thread::spawn(|| async move {
         handles.push(tokio::task::spawn(async {
             if let Ok(url) = site {
                 process_site(&url).await?;
             }
-            // The ? operator used above propagates the error
-            // and can convert it to a different type.
-            // The error type isn't specified, so we do that the next line.
-            Ok::<_, GenericError>(())
+            Ok(())
         }));
     }
     for handle in handles {

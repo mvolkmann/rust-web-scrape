@@ -16,7 +16,8 @@ const UA: &str = "Mozilla/5.0"; // This is enough.
 
 type FileLines = Lines<BufReader<File>>;
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+type GenericError = Box<dyn std::error::Error + Send + Sync>;
+type Result<T> = std::result::Result<T, GenericError>;
 
 async fn get_sites() -> Result<FileLines> {
     let path = "./web-sites.txt";
@@ -26,18 +27,17 @@ async fn get_sites() -> Result<FileLines> {
 }
 
 async fn process_site(url: &str) -> Result<()> {
+    // If commented ...
     if url.starts_with("#") {
-        // commented
         return Ok(());
     }
 
-    println!("url = {}", url);
     let client = reqwest::Client::new();
     let res = client.get(url).header(USER_AGENT, UA).send().await?;
     let html = res.text().await?;
     //dbg!(&html);
     let images: Vec<&str> = html.matches("<img ").collect();
-    println!("found {} img tags", images.len());
+    println!("{} has {} img tags", url, images.len());
     Ok(())
 }
 
@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
             process_site(&url).await?;
         }
     }
-    println!("elapsed time: {:?}", start.elapsed());
+    println!("single-threaded time: {:?}\n", start.elapsed());
 
     // Multi-threaded ...
     let sites = get_sites().await?;
@@ -63,16 +63,18 @@ async fn main() -> Result<()> {
             if let Ok(url) = site {
                 process_site(&url).await?;
             }
-            // Error is "cannot infer type for type parameter `E`
-            // declared on the enum `Result`.
-            Ok(())
+            // The ? operator used above propagates the error
+            // and can convert it to a different type.
+            // The error type isn't specified, so we do that the next line.
+            Ok::<_, GenericError>(())
         }));
     }
     for handle in handles {
-        let result = handle.await?;
-        dbg!(result);
+        if let Err(e) = handle.await? {
+            eprintln!("error: {}", e);
+        }
     }
-    println!("elapsed time: {:?}", start.elapsed());
+    println!("multi-threaded time: {:?}", start.elapsed());
 
     Ok(())
 }

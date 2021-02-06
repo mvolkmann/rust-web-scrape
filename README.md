@@ -11,8 +11,8 @@ to enable using multiple threads.
 The elapsed time for each approach is output
 to show the speed benefit of using multiple threads.
 
-With 19 web sites listed in `web-sites.txt` and
-running on a 2019 MacBook Pro laptop with 32GB of memory,
+With 19 web sites listed in `web-sites.txt` and running on
+a 2019 MacBook Pro laptop with 32GB of memory and 8 cores,
 the single-threaded approach took 16.18 seconds
 and the multi-threaded approach took 707 milliseconds.
 

@@ -1,14 +1,16 @@
 extern crate reqwest;
-extern crate tokio;
+//extern crate tokio;
 
-//use futures::prelude::*;
 use reqwest::header::USER_AGENT;
 use std::boxed::Box;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
-//use std::thread;
 use std::time::Instant;
-use tokio::task::JoinHandle;
+
+//use tokio::task;
+//use tokio::task::JoinHandle;
+use async_std::task;
+use async_std::task::JoinHandle;
 
 // We need to set the user agent because some sites return 403 Forbidden
 // for requests that do not seem to be coming from a web browser.
@@ -42,7 +44,8 @@ async fn process_site(url: &str) -> MyResult<()> {
     Ok(())
 }
 
-#[tokio::main] // starts the Tokio runtime
+//#[tokio::main] // starts the Tokio runtime
+#[async_std::main]
 async fn main() -> MyResult<()> {
     // Single threaded ...
     let sites = get_sites().await?;
@@ -59,8 +62,7 @@ async fn main() -> MyResult<()> {
     let start = Instant::now();
     let mut handles: Vec<JoinHandle<MyResult<()>>> = Vec::new();
     for site in sites {
-        //handles.push(thread::spawn(|| async move {
-        handles.push(tokio::task::spawn(async {
+        handles.push(task::spawn(async {
             if let Ok(url) = site {
                 process_site(&url).await?;
             }
@@ -68,9 +70,12 @@ async fn main() -> MyResult<()> {
         }));
     }
     for handle in handles {
+        /*
         if let Err(e) = handle.await? {
             eprintln!("error: {}", e);
         }
+        */
+        handle.await?;
     }
     println!("multi-threaded time: {:?}", start.elapsed());
 

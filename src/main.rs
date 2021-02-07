@@ -1,5 +1,5 @@
 extern crate reqwest;
-// This cannot use async-std instead of tokio because reqwest depends on tokio.
+// We cannot use async-std in place of tokio because reqwest depends on tokio.
 extern crate tokio;
 
 use reqwest::header::USER_AGENT;
@@ -13,7 +13,6 @@ use tokio::task::JoinHandle;
 
 // We need to set the user agent because some sites return 403 Forbidden
 // for requests that do not seem to be coming from a web browser.
-//const UA: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36";
 const UA: &str = "Mozilla/5.0"; // This is enough.
 
 type FileLines = Lines<BufReader<File>>;
@@ -68,12 +67,9 @@ async fn main() -> MyResult<()> {
         }));
     }
     for handle in handles {
-        /*
         if let Err(e) = handle.await? {
             eprintln!("error: {}", e);
         }
-        */
-        handle.await?;
     }
     println!("multi-threaded time: {:?}", start.elapsed());
 

@@ -1,5 +1,6 @@
 extern crate reqwest;
-//extern crate tokio;
+// This cannot use async-std instead of tokio because reqwest depends on tokio.
+extern crate tokio;
 
 use reqwest::header::USER_AGENT;
 use std::boxed::Box;
@@ -7,10 +8,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 use std::time::Instant;
 
-//use tokio::task;
-//use tokio::task::JoinHandle;
-use async_std::task;
-use async_std::task::JoinHandle;
+use tokio::task;
+use tokio::task::JoinHandle;
 
 // We need to set the user agent because some sites return 403 Forbidden
 // for requests that do not seem to be coming from a web browser.
@@ -44,8 +43,7 @@ async fn process_site(url: &str) -> MyResult<()> {
     Ok(())
 }
 
-//#[tokio::main] // starts the Tokio runtime
-#[async_std::main]
+#[tokio::main] // starts the Tokio runtime
 async fn main() -> MyResult<()> {
     // Single threaded ...
     let sites = get_sites().await?;
